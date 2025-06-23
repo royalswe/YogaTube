@@ -1,8 +1,10 @@
 package database
 
 import (
+	"YogaTube/internal/models"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -22,6 +24,12 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
+
+	// SaveVideo saves the video data to the database.
+	// It returns an error if the video data cannot be saved.
+	SaveVideo(snippet models.Snippet) error
+
+	GetAllVideos() ([]byte, error)
 }
 
 type service struct {
@@ -49,6 +57,22 @@ func New() Service {
 	dbInstance = &service{
 		db: db,
 	}
+
+	// Create the table videos if it doesn't exist
+	createTableQuery := `CREATE TABLE IF NOT EXISTS videos (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		published_at TEXT NOT NULL,
+		title TEXT NOT NULL,
+		description TEXT NOT NULL,
+		thumbnail_url TEXT NOT NULL,
+		video_id TEXT NOT NULL UNIQUE,
+		owner_channel_title TEXT NOT NULL
+	);`
+	_, err = db.Exec(createTableQuery)
+	if err != nil {
+		log.Fatalf("Failed to create table: %v", err)
+	}
+
 	return dbInstance
 }
 
@@ -110,4 +134,46 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", dburl)
 	return s.db.Close()
+}
+
+// SaveVideo saves the video data to the database.
+// It returns an error if the video data cannot be saved.
+func (s *service) SaveVideo(snippet models.Snippet) error {
+	query := `INSERT INTO videos (published_at, title, description, thumbnail_url, video_id, owner_channel_title) VALUES (?, ?, ?, ?, ?, ?)`
+	_, err := s.db.Exec(query, snippet.PublishedAt, snippet.Title, snippet.Description, snippet.Thumbnails.Default.URL, snippet.ResourceID.VideoID, snippet.VideoOwnerChannelTitle)
+	if err != nil {
+		return fmt.Errorf("failed to save video: %w", err)
+	}
+	return nil
+}
+
+func (s *service) GetAllVideos() ([]byte, error) {
+	var videos []models.Snippet
+	query := `SELECT published_at, title, description, thumbnail_url, video_id, owner_channel_title FROM videos`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query videos: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var video models.Snippet
+		var thumbnailURL string
+		if err := rows.Scan(&video.PublishedAt, &video.Title, &video.Description, &thumbnailURL, &video.ResourceID.VideoID, &video.VideoOwnerChannelTitle); err != nil {
+			return nil, fmt.Errorf("failed to scan video: %w", err)
+		}
+		video.Thumbnails.Default.URL = thumbnailURL
+		videos = append(videos, video)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate videos: %w", err)
+	}
+
+	data, err := json.Marshal(videos)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal videos: %w", err)
+	}
+
+	return data, nil
 }

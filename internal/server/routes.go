@@ -11,8 +11,14 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	// Register routes
 	mux.HandleFunc("/", s.HelloWorldHandler)
-
 	mux.HandleFunc("/health", s.healthHandler)
+
+	api := http.NewServeMux()
+	api.HandleFunc("/fetch", s.FetchAndStorePlaylistItems)
+	api.HandleFunc("/videos", s.getAllVideosHandler)
+	//api.HandleFunc("/video", s.getDailyVideoHandler)
+
+	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", api))
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
@@ -35,6 +41,18 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		// Proceed with the next handler
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) getAllVideosHandler(w http.ResponseWriter, r *http.Request) {
+	videos, err := s.db.GetAllVideos()
+	if err != nil {
+		http.Error(w, "Failed to retrieve videos", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(videos); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {

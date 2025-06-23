@@ -1,0 +1,15 @@
+# Configuration for air
+root = "./"
+
+[build]
+  cmd = "go build -o ./tmp/main ./cmd/api/main.go"
+  bin = "./tmp/main"
+  include = ["**/*.go"]
+  exclude = ["tmp", "frontend"]
+
+[log]
+  level = "debug"
+
+[env]
+  # Load environment variables
+  file = ".env"
