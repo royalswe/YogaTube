@@ -30,6 +30,8 @@ type Service interface {
 	SaveVideo(snippet models.Snippet) error
 
 	GetAllVideos() ([]byte, error)
+
+	GetVideoById(index int) ([]byte, error)
 }
 
 type service struct {
@@ -145,6 +147,22 @@ func (s *service) SaveVideo(snippet models.Snippet) error {
 		return fmt.Errorf("failed to save video: %w", err)
 	}
 	return nil
+}
+
+// Get video based on the nth index from the database.
+func (s *service) GetVideoById(id int) ([]byte, error) {
+	row := s.db.QueryRow("SELECT published_at, title, description, thumbnail_url, video_id, owner_channel_title FROM videos WHERE id = ?", id)
+	var video models.Snippet
+	err := row.Scan(&video.PublishedAt, &video.Title, &video.Description, &video.Thumbnails.Default.URL, &video.ResourceID.VideoID, &video.VideoOwnerChannelTitle)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan video: %w", err)
+	}
+
+	data, err := json.Marshal(video)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal video: %w", err)
+	}
+	return data, nil
 }
 
 func (s *service) GetAllVideos() ([]byte, error) {

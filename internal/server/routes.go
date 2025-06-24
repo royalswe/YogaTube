@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -16,9 +18,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 	api := http.NewServeMux()
 	api.HandleFunc("/fetch", s.FetchAndStorePlaylistItems)
 	api.HandleFunc("/videos", s.getAllVideosHandler)
-	//api.HandleFunc("/video", s.getDailyVideoHandler)
+	api.HandleFunc("/video", s.getDailyVideoHandler)
 
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", api))
+
+	// Ensure the new route is registered in RegisterRoutes
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
@@ -51,6 +55,51 @@ func (s *Server) getAllVideosHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(videos); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+var dailyVideoIndex = 1
+var lastUpdatedDate = ""
+
+// Get the daily video from the database. Beginning with the first video and then every 24 hours.
+func (s *Server) getDailyVideoHandler(w http.ResponseWriter, r *http.Request) {
+	currentDate := time.Now().UTC().Format(time.DateOnly)
+	// Check if the date has changed
+	if currentDate != lastUpdatedDate {
+		lastUpdatedDate = currentDate
+		dailyVideoIndex++
+	}
+	// check if offset is provided and is a valid integer, if so, adjust dailyVideoIndex
+	videoId := dailyVideoIndex
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		offset, err := strconv.Atoi(offsetStr)
+		if err == nil {
+			videoId += offset
+		} else {
+			http.Error(w, "Invalid offset parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	video, err := s.db.GetVideoById(videoId)
+	if err != nil {
+		// Reset dailyVideoIndex if retrieval fails
+		dailyVideoIndex = 1
+		video, err = s.db.GetVideoById(dailyVideoIndex)
+		if err != nil {
+			http.Error(w, "Failed to fetch video", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(video); err != nil {
 		log.Printf("Failed to write response: %v", err)
 	}
 }

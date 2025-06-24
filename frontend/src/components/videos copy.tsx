@@ -1,6 +1,6 @@
 // App.tsx
 import React, { useEffect, useState } from "react";
-import { fetchVideos } from "../services/apiService";
+import { fetchData } from "../services/apiService";
 
 interface Video {
   title: string;
@@ -13,7 +13,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const getVideos = async () => {
       try {
-        const data = await fetchVideos();
+        const data = await fetchData("http://localhost:8080/api/v1/videos");
         setVideos(data);
       } catch (err) {
         if (err instanceof Error) {
