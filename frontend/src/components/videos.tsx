@@ -1,6 +1,7 @@
 // App.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { fetchData } from "../services/apiService";
+import "./videos.css"; // Add a CSS file for styling
 
 interface Thumbnail {
   url: string;
@@ -33,6 +34,8 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState<number>(0);
   const apiDomain = import.meta.env.VITE_API_DOMAIN ?? "http://localhost:83080";
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
   useEffect(() => {
     const getVideos = async () => {
       try {
@@ -50,6 +53,23 @@ const App: React.FC = () => {
     getVideos();
   }, [offset, apiDomain]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "f" && iframeRef.current) {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          iframeRef.current.requestFullscreen();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   const handleNext = () => {
     setOffset((prevOffset) => prevOffset + 1);
   };
@@ -59,49 +79,38 @@ const App: React.FC = () => {
   };
 
   return (
-    <div>
-      {error && <p>Error: {error}</p>}
-      {video && <h2>{video.title}</h2>}
+    <div className="video-page">
+      {error && <p className="error">Error: {error}</p>}
       {video && (
-        <div>
-          <p><strong>Description:</strong> {video.description?.slice(0, 100)}...</p>
-          <p><strong>Channel Title:</strong> {video.videoOwnerChannelTitle}</p>
-          <div>
-            <strong>Thumbnails:</strong>
-            <div>
-              <p>Default: {video.thumbnails?.default?.width}</p>
-              <img src={video.thumbnails?.default?.url} alt="Default Thumbnail" />
+        <div className="video-container">
+          <h2 className="video-title">{video.title}</h2>
+          <iframe
+            ref={iframeRef}
+            className="video-player"
+            width="560"
+            height="315"
+            src={`https://www.youtube.com/embed/${video.resourceId?.videoId}`}
+            title="YouTube video player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          ></iframe>
+          <p className="hint">Press 'F' to toggle fullscreen mode for the video.</p>
+          <div className="video-info">
+            <p><strong>Description:</strong> {video.description?.slice(0, 100)}...</p>
+            <p><strong>Channel Title:</strong> {video.videoOwnerChannelTitle}</p>
+            <div className="thumbnails">
+              <strong>Thumbnails:</strong>
+              <img src={video.thumbnails?.default?.url} alt="Default Thumbnail" className="thumbnail" />
             </div>
-          </div>
-          <div>
-            <strong>Resource ID:</strong>
-            <p>Kind: {video.resourceId?.kind}</p>
-            <p>Video ID: {video.resourceId?.videoId}</p>
           </div>
         </div>
       )}
 
-    {video?.resourceId?.videoId && (
-      <div>
-        <h3>Watch Video:</h3>
-        <iframe
-      width="560"
-      height="315"
-      src={`https://www.youtube.com/embed/${video.resourceId.videoId}`}
-      title="YouTube video player"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowFullScreen
-        ></iframe>
+      <div className="navigation-buttons">
+        <button onClick={handlePrevious} disabled={offset === 0} className="button">Previous</button>
+        <button onClick={handleNext} className="button">Next</button>
       </div>
-    )}
-
-    <div>
-      <button onClick={handlePrevious} disabled={offset === 0}>Previous</button>
-      <button onClick={handleNext}>Next</button>
     </div>
-
-    </div>
-    
   );
 };
 

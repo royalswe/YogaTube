@@ -16,9 +16,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/health", s.healthHandler)
 
 	api := http.NewServeMux()
-	api.HandleFunc("/fetch", s.FetchAndStorePlaylistItems)
-	api.HandleFunc("/videos", s.getAllVideosHandler)
-	api.HandleFunc("/video", s.getDailyVideoHandler)
+	api.HandleFunc("GET /fetch", s.FetchAndStorePlaylistItems)
+	api.HandleFunc("GET /videos", s.getAllVideosHandler)
+	api.HandleFunc("GET /video", s.getDailyVideoHandler)
 
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", api))
 
@@ -32,7 +32,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*") // Replace "*" with specific origins if needed
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
 		w.Header().Set("Access-Control-Allow-Credentials", "false") // Set to "true" if credentials are required
 
