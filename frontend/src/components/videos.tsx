@@ -33,13 +33,12 @@ const App: React.FC = () => {
   const [video, setVideos] = useState<Video>();
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState<number>(0);
-  const apiDomain = import.meta.env.VITE_API_DOMAIN ?? "http://localhost:83080";
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     const getVideos = async () => {
       try {
-        const data = await fetchData(`${apiDomain}/api/v1/video?offset=${offset}`);
+        const data = await fetchData(`/api/v1/video?offset=${offset}`);
         setVideos(data);
       } catch (err) {
         if (err instanceof Error) {
@@ -51,7 +50,7 @@ const App: React.FC = () => {
     };
 
     getVideos();
-  }, [offset, apiDomain]);
+  }, [offset]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

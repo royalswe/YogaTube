@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -12,7 +13,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux := http.NewServeMux()
 
 	// Register routes
-	mux.HandleFunc("/", s.HelloWorldHandler)
+	//mux.HandleFunc("/", s.HelloWorldHandler)
 	mux.HandleFunc("/health", s.healthHandler)
 
 	api := http.NewServeMux()
@@ -22,7 +23,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", api))
 
-	// Ensure the new route is registered in RegisterRoutes
+	// Serve front-end files
+	frontendDir := "frontend/dist"
+	if _, err := os.Stat(frontendDir); err == nil {
+		mux.Handle("/", http.FileServer(http.Dir(frontendDir)))
+	}
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
