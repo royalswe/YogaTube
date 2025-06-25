@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -64,8 +65,16 @@ func New() Service {
 		}
 	}
 
+	// Ensure the directory exists before creating the database file
 	if dburl == "" {
 		log.Fatalf("No valid database file found in possible paths")
+	}
+
+	dbDir := filepath.Dir(dburl)
+	if _, err := os.Stat(dbDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dbDir, 0755); err != nil {
+			log.Fatalf("Failed to create database directory: %v", err)
+		}
 	}
 
 	// Open the database
