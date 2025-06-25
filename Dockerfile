@@ -24,5 +24,5 @@ FROM alpine:3.22.0 AS prod
 WORKDIR /app
 COPY --from=build /app/main /app/main
 COPY --from=build /app/frontend/dist /app/frontend/dist
-EXPOSE ${PORT}
+EXPOSE 8080
 CMD ["./main"]
