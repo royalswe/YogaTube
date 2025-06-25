@@ -8,10 +8,22 @@ services:
     ports:
       - 8080:8080
     environment:
-      APP_ENV: ${APP_ENV}
       PORT: 8080
       BLUEPRINT_DB_URL: ./db/test.db
     volumes:
       - sqlite_bp:/app/db
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.yoga.rule=Host(`yoga.funlig.com`)
+      - traefik.http.routers.yoga.entrypoints=websecure
+      - traefik.http.routers.yoga.tls.certResolver=letsencrypt
+      - traefik.http.services.yoga.loadbalancer.server.port=8080
+    
 volumes:
   sqlite_bp:
+
+networks:
+  dokploy-network:
+    external: true
