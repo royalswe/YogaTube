@@ -43,17 +43,47 @@ var (
 	dbInstance *service
 )
 
+// Loop through different paths until a valid database file is found
+var possiblePaths = []string{
+	"/app/db/test.db",
+	"../db/test.db",
+	"../../db/test.db",
+	"/db/test.db",
+}
+
 func New() Service {
 	// Reuse Connection
 	if dbInstance != nil {
 		return dbInstance
 	}
 
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			dburl = path
+			break
+		}
+	}
+
+	if dburl == "" {
+		log.Fatalf("No valid database file found in possible paths")
+	}
+
+	// Open the database
+	log.Printf("Using database file: %s", dburl)
 	db, err := sql.Open("sqlite3", dburl)
 	if err != nil {
 		// This will not be a connection error, but a DSN parse error or
 		// another initialization error.
-		log.Fatal(err)
+		log.Fatalf("Failed to open database: %v", err)
+	}
+
+	_, err = os.Stat(dburl)
+	if os.IsNotExist(err) {
+		file, err := os.Create(dburl)
+		if err != nil {
+			log.Fatalf("Failed to create database file: %v", err)
+		}
+		file.Close()
 	}
 
 	dbInstance = &service{
