@@ -40,10 +40,13 @@ const App: React.FC = () => {
       try {
         const data = await fetchData(`/api/v1/video?offset=${offset}`);
         if (data?.exceeded) {
-          setOffset(0) ; // Reset offset if exceeded
+          setOffset(0)
+          alert("No more videos available. Resetting to the first video.");
+          return;
         }
         setVideos(data);
       } catch (err) {
+        setOffset(0)
         if (err instanceof Error) {
           setError(err.message);
         } else {
