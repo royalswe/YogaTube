@@ -33,6 +33,8 @@ type Service interface {
 	GetAllVideos() ([]byte, error)
 
 	GetVideoById(index int) ([]byte, error)
+
+	GetTotalVideos() (int, error)
 }
 
 type service struct {
@@ -45,12 +47,12 @@ var (
 )
 
 // Loop through different paths until a valid database file is found
-var possiblePaths = []string{
-	"/app/db/test.db",
-	"../db/test.db",
-	"../../db/test.db",
-	"/db/test.db",
-}
+// var possiblePaths = []string{
+// 	"/app/db/test.db",
+// 	"../db/test.db",
+// 	"../../db/test.db",
+// 	"/db/test.db",
+// }
 
 func New() Service {
 	// Reuse Connection
@@ -58,12 +60,12 @@ func New() Service {
 		return dbInstance
 	}
 
-	for _, path := range possiblePaths {
-		if _, err := os.Stat(path); err == nil {
-			dburl = path
-			break
-		}
-	}
+	// for _, path := range possiblePaths {
+	// 	if _, err := os.Stat(path); err == nil {
+	// 		dburl = path
+	// 		break
+	// 	}
+	// }
 
 	// Ensure the directory exists before creating the database file
 	if dburl == "" {
@@ -233,4 +235,15 @@ func (s *service) GetAllVideos() ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// GetTotalVideos returns the total number of videos in the database.
+func (s *service) GetTotalVideos() (int, error) {
+	query := `SELECT COUNT(*) FROM videos`
+	var total int
+	row := s.db.QueryRow(query)
+	if err := row.Scan(&total); err != nil {
+		return 0, fmt.Errorf("failed to fetch total videos: %w", err)
+	}
+	return total, nil
 }

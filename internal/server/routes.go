@@ -64,7 +64,7 @@ func (s *Server) getAllVideosHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var dailyVideoIndex = 1
+var dailyVideoIndex = 0
 var lastUpdatedDate = ""
 
 // Get the daily video from the database. Beginning with the first video and then every 24 hours.
@@ -89,18 +89,30 @@ func (s *Server) getDailyVideoHandler(w http.ResponseWriter, r *http.Request) {
 
 	video, err := s.db.GetVideoById(videoId)
 	if err != nil {
-		// Reset dailyVideoIndex if retrieval fails
-		dailyVideoIndex = 1
-		video, err = s.db.GetVideoById(dailyVideoIndex)
-		if err != nil {
-			http.Error(w, "Failed to fetch video", http.StatusInternalServerError)
+		// Check if it is the last video from the table instead of resetting dailyVideoIndex
+		// Get the total number of videos
+		totalVideos, countErr := s.db.GetTotalVideos()
+		if countErr != nil {
+			http.Error(w, "Failed to fetch video count", http.StatusInternalServerError)
 			return
 		}
-	}
 
-	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
-		return
+		// If dailyVideoIndex exceeds totalVideos, reset to the first video
+		if dailyVideoIndex > totalVideos {
+			dailyVideoIndex = 1
+			video, err = s.db.GetVideoById(dailyVideoIndex)
+			if err != nil {
+				http.Error(w, "Failed to fetch video", http.StatusInternalServerError)
+				return
+			}
+		} else if videoId > totalVideos {
+			resp := map[string]string{"exceeded": "No more videos available"}
+			jsonResp, _ := json.Marshal(resp)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write(jsonResp)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
