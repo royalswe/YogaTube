@@ -1,12 +1,13 @@
 // App.tsx
+import type { Video } from "../models/video"; // Import the Video interface
 import React, { useEffect, useState } from "react";
 import { fetchData } from "../services/apiService";
 
-interface Video {
-  title: string;
+interface AppProps {
+  onVideoClick?: (videoId: number) => void;
 }
 
-const App: React.FC = () => {
+const App: React.FC<AppProps> = ({ onVideoClick }) => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,13 +28,21 @@ const App: React.FC = () => {
     getVideos();
   }, []);
 
+  const handleVideoClick = (videoId: number) => {
+    if (onVideoClick) {
+      onVideoClick(videoId);
+    } else {
+      console.log(`Clicked video with ID: ${videoId}`);
+    }
+  };
+
   return (
     <div>
       <h1>Videos</h1>
       {error && <p>Error: {error}</p>}
       <ul>
-        {videos.map((video, index) => (
-          <li key={index}>{video.title}</li>
+        {videos.map((video) => (
+          <li key={video.id} onClick={() => handleVideoClick(video.id)}>{video.title}</li>
         ))}
       </ul>
     </div>

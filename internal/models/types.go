@@ -3,6 +3,7 @@ package models
 // Snippet represents the video data structure.
 // This struct matches the API response structure.
 type Snippet struct {
+	ID                     int        `json:"id"`
 	PublishedAt            string     `json:"publishedAt"`
 	Title                  string     `json:"title"`
 	Description            string     `json:"description"`

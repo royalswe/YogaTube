@@ -192,9 +192,9 @@ func (s *service) SaveVideo(snippet models.Snippet) error {
 
 // Get video based on the nth index from the database.
 func (s *service) GetVideoById(id int) ([]byte, error) {
-	row := s.db.QueryRow("SELECT published_at, title, description, thumbnail_url, video_id, owner_channel_title FROM videos WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, published_at, title, description, thumbnail_url, video_id, owner_channel_title FROM videos WHERE id = ?", id)
 	var video models.Snippet
-	err := row.Scan(&video.PublishedAt, &video.Title, &video.Description, &video.Thumbnails.Default.URL, &video.ResourceID.VideoID, &video.VideoOwnerChannelTitle)
+	err := row.Scan(&video.ID, &video.PublishedAt, &video.Title, &video.Description, &video.Thumbnails.Default.URL, &video.ResourceID.VideoID, &video.VideoOwnerChannelTitle)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan video: %w", err)
 	}
@@ -208,7 +208,7 @@ func (s *service) GetVideoById(id int) ([]byte, error) {
 
 func (s *service) GetAllVideos() ([]byte, error) {
 	var videos []models.Snippet
-	query := `SELECT published_at, title, description, thumbnail_url, video_id, owner_channel_title FROM videos`
+	query := `SELECT id, published_at, title, description, thumbnail_url, video_id, owner_channel_title FROM videos`
 	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query videos: %w", err)
@@ -218,7 +218,7 @@ func (s *service) GetAllVideos() ([]byte, error) {
 	for rows.Next() {
 		var video models.Snippet
 		var thumbnailURL string
-		if err := rows.Scan(&video.PublishedAt, &video.Title, &video.Description, &thumbnailURL, &video.ResourceID.VideoID, &video.VideoOwnerChannelTitle); err != nil {
+		if err := rows.Scan(&video.ID, &video.PublishedAt, &video.Title, &video.Description, &thumbnailURL, &video.ResourceID.VideoID, &video.VideoOwnerChannelTitle); err != nil {
 			return nil, fmt.Errorf("failed to scan video: %w", err)
 		}
 		video.Thumbnails.Default.URL = thumbnailURL

@@ -1,39 +1,18 @@
 // App.tsx
+import type { Video } from "../models/video"; // Import the Video interface
 import React, { useEffect, useState, useRef } from "react";
 import { fetchData } from "../services/apiService";
 import "./videos.css"; // Add a CSS file for styling
-
-interface Thumbnail {
-  url: string;
-  width: number;
-  height: number;
-}
-
-interface Thumbnails {
-  default?: Thumbnail;
-  medium?: Thumbnail;
-  [key: string]: Thumbnail | undefined;
-}
-
-interface ResourceId {
-  kind?: string;
-  videoId?: string;
-}
-
-interface Video {
-  title: string;
-  publishedAt?: string;
-  description?: string;
-  videoOwnerChannelTitle?: string;
-  thumbnails?: Thumbnails;
-  resourceId?: ResourceId;
-}
+import VideoList from "./videoList";
 
 const App: React.FC = () => {
   const [video, setVideos] = useState<Video>();
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState<number>(0);
+  const [showFullDescription, setShowFullDescription] = useState<boolean>(false);
+  const [showVideoList, setShowVideoList] = useState<boolean>(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const getVideos = async () => {
@@ -83,6 +62,19 @@ const App: React.FC = () => {
     setOffset((prevOffset) => Math.max(prevOffset - 1, 0));
   };
 
+  const handleShowVideoList = () => {
+    setShowVideoList(true);
+    videoListRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleVideoClick = (clickedId: number) => {
+    if (video?.id !== undefined) {
+      const newOffset = offset + (clickedId - video.id);
+      setOffset(newOffset);
+      setShowVideoList(false);
+    }
+  };
+
   return (
     <div className="video-page">
       {error && <p className="error">Error: {error}</p>}
@@ -99,15 +91,43 @@ const App: React.FC = () => {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           ></iframe>
-          <p className="hint">Press 'F' to toggle fullscreen mode for the video.</p>
           <div className="video-info">
-            <p><strong>Description:</strong> {video.description?.slice(0, 100)}...</p>
             <p><strong>Channel Title:</strong> {video.videoOwnerChannelTitle}</p>
-            <div className="thumbnails">
-              <strong>Thumbnails:</strong>
-              <img src={video.thumbnails?.default?.url} alt="Default Thumbnail" className="thumbnail" />
+            <div
+              className="description"
+              onClick={() => setShowFullDescription((prev) => !prev)}
+            >
+              <strong>Description:</strong>{" "}
+              {showFullDescription || !video.description || video.description.length <= 70 ? (
+                video.description
+              ) : (
+                <>
+                  {video.description.slice(0, 70)}...
+                  <span
+                    style={{ fontWeight: "700", cursor: "pointer", marginLeft: 4 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowFullDescription(true);
+                    }}
+                  >
+                    Show full description ⇩
+                  </span>
+                </>
+              )}
+              {showFullDescription && video.description && video.description.length > 70 && (
+                <span
+                  style={{ fontWeight: "700", cursor: "pointer", marginLeft: 4 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowFullDescription(false);
+                  }}
+                >
+                  Show less
+                </span>
+              )}
             </div>
           </div>
+          <p className="hint">Press 'F' to toggle fullscreen mode for the video.</p>
         </div>
       )}
 
@@ -115,6 +135,14 @@ const App: React.FC = () => {
         <button onClick={handlePrevious} disabled={offset === 0} className="button">Previous</button>
         <button onClick={handleNext} className="button">Next</button>
       </div>
+
+      <button onClick={handleShowVideoList} className="button scroll-button">View All Videos</button>
+
+      {showVideoList && (
+        <div ref={videoListRef} className="video-list-section">
+          <VideoList onVideoClick={handleVideoClick} />
+        </div>
+      )}
     </div>
   );
 };
