@@ -66,7 +66,7 @@ const App: React.FC = () => {
     setShowVideoList(true);
     setTimeout(() => {
       videoListRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 10);
+    }, 100);
   };
 
   const handleVideoClick = (clickedId: number) => {
