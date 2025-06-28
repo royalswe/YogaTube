@@ -14,7 +14,7 @@ const App: React.FC<AppProps> = ({ onVideoClick }) => {
   useEffect(() => {
     const getVideos = async () => {
       try {
-        const data = await fetchData("http://localhost:8080/api/v1/videos");
+        const data = await fetchData("/api/v1/videos");
         setVideos(data);
       } catch (err) {
         if (err instanceof Error) {
