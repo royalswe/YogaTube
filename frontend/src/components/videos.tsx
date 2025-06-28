@@ -64,7 +64,9 @@ const App: React.FC = () => {
 
   const handleShowVideoList = () => {
     setShowVideoList(true);
-    videoListRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      videoListRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 10);
   };
 
   const handleVideoClick = (clickedId: number) => {
@@ -131,12 +133,41 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <div className="navigation-buttons">
-        <button onClick={handlePrevious} disabled={offset === 0} className="button">Previous</button>
-        <button onClick={handleNext} className="button">Next</button>
+      <div className="pagination-buttons">
+        <button onClick={handlePrevious} disabled={offset === 0} className="button">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          Previous
+        </button>
+        <button onClick={handleNext} className="button">
+          Next
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+        <button onClick={handleShowVideoList} className="button scroll-button">View All Videos</button>
       </div>
-
-      <button onClick={handleShowVideoList} className="button scroll-button">View All Videos</button>
 
       {showVideoList && (
         <div ref={videoListRef} className="video-list-section">

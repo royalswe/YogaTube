@@ -50,9 +50,14 @@
   border-radius: 4px;
 }
 
-.navigation-buttons {
+.pagination-buttons {
   display: flex;
-  gap: 10px;
+  gap: 16px;
+}
+
+.pagination-buttons .button {
+  display: flex;
+  align-items: center;
 }
 
 .button {
@@ -60,7 +65,7 @@
   font-size: 16px;
   border: none;
   border-radius: 4px;
-  background-color: #007bff;
+  background-color: #2d5c46;
   color: #fff;
   cursor: pointer;
   transition: background-color 0.3s;
@@ -72,5 +77,10 @@
 }
 
 .button:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: #1a3d2f;
+}
+
+.scroll-button {
+  position: absolute;
+  right: 20px;
 }

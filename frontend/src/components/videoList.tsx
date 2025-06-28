@@ -40,9 +40,20 @@ const App: React.FC<AppProps> = ({ onVideoClick }) => {
     <div>
       <h1>Videos</h1>
       {error && <p>Error: {error}</p>}
-      <ul>
+      <ul style={{ listStyleType: "none", padding: 0 }}>
         {videos.map((video) => (
-          <li key={video.id} onClick={() => handleVideoClick(video.id)}>{video.title}</li>
+          <li
+            key={video.id}
+            onClick={() => handleVideoClick(video.id)}
+            style={{
+              cursor: "pointer",
+              color: "#1E90FF", // Adjusted for better contrast in dark mode
+              textDecoration: "underline",
+              margin: "10px 0",
+            }}
+          >
+            {video.title}
+          </li>
         ))}
       </ul>
     </div>
