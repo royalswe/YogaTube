@@ -66,7 +66,7 @@ const App: React.FC = () => {
     setShowVideoList(true);
     setTimeout(() => {
       videoListRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    }, 10);
   };
 
   const handleVideoClick = (clickedId: number) => {
@@ -170,7 +170,7 @@ const App: React.FC = () => {
       </div>
 
       {showVideoList && (
-        <div ref={videoListRef} className="video-list-section">
+        <div ref={videoListRef} style={{ minHeight: "800px" }}>
           <VideoList onVideoClick={handleVideoClick} />
         </div>
       )}

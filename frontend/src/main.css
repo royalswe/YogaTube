@@ -51,13 +51,10 @@ button:hover {
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    background-color: #f6f6f6;
   }
   a:hover {
     color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
   }
 }
 
@@ -67,7 +64,7 @@ button:hover {
 }
 
 .light-mode {
-  background-color: #ffffff;
+  background-color: #f6f6f6;
   color: #000000;
 }
 
@@ -105,7 +102,7 @@ button:hover {
 }
 
 .light-mode .video-page {
-  background-color: #ffffff;
+  background-color: #f6f6f6;
   color: #000000;
 }
 
@@ -113,12 +110,11 @@ button:hover {
 .video-container {
   max-width: 800px;
   width: 100%;
-  background: inherit; /* Inherit background color from parent */
+  background-color: #ffffff; /* Inherit background color from parent */
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
-  transition: background-color 0.3s, color 0.3s;
 }
 
 .dark-mode .video-container {
@@ -127,6 +123,21 @@ button:hover {
 }
 
 .light-mode .video-container {
-  background-color: #f9f9f9;
+  background-color: #ffffff;
   color: #000000;
+}
+
+.video-item {
+  cursor: pointer;
+  color: #1e90ff;
+  text-decoration: underline;
+  margin: 10px 0;
+}
+
+.light-mode .video-item {
+  color: #0075e8;
+}
+
+.video-item:hover {
+  color: #005bb5;
 }

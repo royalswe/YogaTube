@@ -52,7 +52,11 @@
 
 .pagination-buttons {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 
 .pagination-buttons .button {
@@ -81,6 +85,14 @@
 }
 
 .scroll-button {
-  position: absolute;
-  right: 20px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  .scroll-button {
+    margin-top: 20px;
+    margin-left: 0;
+    text-align: center;
+  }
 }

@@ -45,12 +45,7 @@ const App: React.FC<AppProps> = ({ onVideoClick }) => {
           <li
             key={video.id}
             onClick={() => handleVideoClick(video.id)}
-            style={{
-              cursor: "pointer",
-              color: "#1E90FF", // Adjusted for better contrast in dark mode
-              textDecoration: "underline",
-              margin: "10px 0",
-            }}
+            className="video-item"
           >
             {video.title}
           </li>
