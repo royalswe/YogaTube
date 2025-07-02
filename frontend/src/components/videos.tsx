@@ -8,6 +8,7 @@ import VideoList from "./videoList";
 const App: React.FC = () => {
   const [video, setVideos] = useState<Video>();
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [offset, setOffset] = useState<number>(0);
   const [showFullDescription, setShowFullDescription] = useState<boolean>(false);
   const [showVideoList, setShowVideoList] = useState<boolean>(false);
@@ -19,14 +20,20 @@ const App: React.FC = () => {
       try {
         const data = await fetchData(`/api/v1/video?offset=${offset}`);
         if (data?.exceeded) {
-          setOffset(0)
-          alert("No more videos available. Resetting to the first video.");
+          // calculate the offset to reset to the first video
+          //setOffset(offset - (video?.id || 0));
+          setOffset(prevOffset => prevOffset - (video?.id || 0));
+          setInfo("No more videos available. Resetting to the first video.");
+          setTimeout(() => {
+            setInfo(null);
+          }, 3000);
           return;
         }
         setVideos(data);
+        setError(null);
       } catch (err) {
         setOffset(0)
-        if (err instanceof Error) {
+        if (err instanceof Error) {          
           setError(err.message);
         } else {
           setError("An unknown error occurred");
@@ -35,6 +42,7 @@ const App: React.FC = () => {
     };
 
     getVideos();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset]);
 
   useEffect(() => {
@@ -59,7 +67,7 @@ const App: React.FC = () => {
   };
 
   const handlePrevious = () => {
-    setOffset((prevOffset) => Math.max(prevOffset - 1, 0));
+    setOffset((prevOffset) => prevOffset - 1);
   };
 
   const handleShowVideoList = () => {
@@ -80,6 +88,7 @@ const App: React.FC = () => {
   return (
     <div className="video-page">
       {error && <p className="error">Error: {error}</p>}
+      {info  && <p className="info">{info}</p>}
       {video && (
         <div className="video-container">
           <h2 className="video-title">{video.title}</h2>
@@ -134,7 +143,7 @@ const App: React.FC = () => {
       )}
 
       <div className="pagination-buttons">
-        <button onClick={handlePrevious} disabled={offset === 0} className="button">
+        <button onClick={handlePrevious} className="button">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"

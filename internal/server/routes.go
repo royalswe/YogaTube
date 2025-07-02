@@ -96,7 +96,6 @@ func (s *Server) getDailyVideoHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to fetch video count", http.StatusInternalServerError)
 			return
 		}
-
 		// If dailyVideoIndex exceeds totalVideos, reset to the first video
 		if dailyVideoIndex > totalVideos {
 			dailyVideoIndex = 1
@@ -112,6 +111,12 @@ func (s *Server) getDailyVideoHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write(jsonResp)
 			return
+		} else if videoId <= 0 {
+			video, err = s.db.GetVideoById(totalVideos - videoId)
+			if err != nil {
+				http.Error(w, "Failed to fetch last video", http.StatusInternalServerError)
+				return
+			}
 		}
 	}
 

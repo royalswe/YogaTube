@@ -8,9 +8,19 @@
 }
 
 .error {
-  color: red;
+  color: #d9534f;
   font-weight: bold;
   margin-bottom: 20px;
+}
+
+.info {
+  color: rgb(69, 174, 125);
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.light-mode .info {
+  color: #2d5c46;
 }
 
 .video-container {
