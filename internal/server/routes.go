@@ -64,7 +64,7 @@ func (s *Server) getAllVideosHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var dailyVideoIndex = 1
+var dailyVideoIndex = 0
 var lastUpdatedDate = ""
 
 // Get the daily video from the database. Beginning with the first video and then every 24 hours.
@@ -112,7 +112,7 @@ func (s *Server) getDailyVideoHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write(jsonResp)
 			return
 		} else if videoId <= 0 {
-			video, err = s.db.GetVideoById(totalVideos - videoId)
+			video, err = s.db.GetVideoById(totalVideos + videoId)
 			if err != nil {
 				http.Error(w, "Failed to fetch last video", http.StatusInternalServerError)
 				return
