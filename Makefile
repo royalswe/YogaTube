@@ -42,17 +42,19 @@ clean:
 	@echo "Cleaning..."
 	@rm -f main
 
-# Live Reload
+# Live Reload for Go and Frontend
 watch:
 	@if command -v air > /dev/null; then \
 		echo "Starting air with configuration..."; \
-		air -c air.toml; \
+		air -c air.toml & \
+		npm run watch --prefix ./frontend; \
 	else \
 		read -p "Go's 'air' is not installed on your machine. Do you want to install it? [Y/n] " choice; \
 		if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
 			go install github.com/air-verse/air@latest; \
 			echo "Starting air with configuration..."; \
-			air -c air.toml; \
+			air -c air.toml & \
+			npm run watch --prefix ./frontend; \
 		else \
 			echo "You chose not to install air. Exiting..."; \
 			exit 1; \

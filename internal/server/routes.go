@@ -64,7 +64,7 @@ func (s *Server) getAllVideosHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var dailyVideoIndex = 0
+var dailyVideoIndex = 2
 var lastUpdatedDate = ""
 
 // Get the daily video from the database. Beginning with the first video and then every 24 hours.

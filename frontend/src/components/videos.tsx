@@ -1,6 +1,7 @@
 // App.tsx
 import type { Video } from "../models/video"; // Import the Video interface
 import React, { useEffect, useState, useRef } from "react";
+import { YouTubeApi } from "../services/YouTubeApi";
 import { fetchData } from "../services/apiService";
 import "./videos.css"; // Add a CSS file for styling
 import VideoList from "./videoList";
@@ -12,7 +13,7 @@ const App: React.FC = () => {
   const [offset, setOffset] = useState<number>(0);
   const [showFullDescription, setShowFullDescription] = useState<boolean>(false);
   const [showVideoList, setShowVideoList] = useState<boolean>(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [ytApi, setYtApi] = useState<YouTubeApi | null>(null);
   const videoListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,25 +43,34 @@ const App: React.FC = () => {
     };
 
     getVideos();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset]);
 
   useEffect(() => {
+    let api = ytApi;
+    const videoId = video?.resourceId?.videoId;
+    if (!ytApi && videoId) {
+      api = new YouTubeApi("video-player", videoId, () => {
+        setYtApi(api);
+      });
+    } else if (ytApi && videoId) {
+      ytApi.loadVideoById(videoId);
+    }
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "f" && iframeRef.current) {
-        if (document.fullscreenElement) {
-          document.exitFullscreen();
-        } else {
-          iframeRef.current.requestFullscreen();
+      if (api && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
+        if (event.key === "f") {
+          api.toggleFullscreen();
+        }
+        if (event.key === " ") {
+          event.preventDefault(); // Prevent page scrolling
+          api.togglePlayPause();
         }
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [video]);
 
   const handleNext = () => {
     setOffset((prevOffset) => prevOffset + 1);
@@ -92,16 +102,7 @@ const App: React.FC = () => {
       {video && (
         <div className="video-container">
           <h2 className="video-title">{video.title}</h2>
-          <iframe
-            ref={iframeRef}
-            className="video-player"
-            width="560"
-            height="315"
-            src={`https://www.youtube.com/embed/${video.resourceId?.videoId}`}
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          ></iframe>
+          <div id="video-player"></div>
           <div className="video-info">
             <p><strong>Channel Title:</strong> {video.videoOwnerChannelTitle}</p>
             <div
@@ -138,7 +139,9 @@ const App: React.FC = () => {
               )}
             </div>
           </div>
-          <p className="hint">Press 'F' to toggle fullscreen mode for the video.</p>
+            <p className="hint">
+            Press <b><i>F</i></b> to toggle fullscreen and <b><i>Space</i></b> to play/pause the video.
+            </p>
         </div>
       )}
 

@@ -39,7 +39,7 @@
   margin-bottom: 10px;
 }
 
-.video-player {
+#video-player {
   width: 100%;
   border: none;
   border-radius: 8px;
