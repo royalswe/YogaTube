@@ -8,7 +8,7 @@ COPY frontend/. .
 RUN npm run build
 
 FROM golang:1.24-alpine AS build
-RUN apk add --no-cache alpine-sdk
+RUN apk add --no-cache build-base
 
 WORKDIR /app
 
@@ -21,6 +21,7 @@ COPY --from=frontend_builder /frontend/dist /app/frontend/dist
 RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api/main.go
 
 FROM alpine:3.22.0 AS prod
+RUN apk add --no-cache libstdc++
 WORKDIR /app
 COPY --from=build /app/main /app/main
 COPY --from=build /app/frontend/dist /app/frontend/dist
