@@ -13,13 +13,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux := http.NewServeMux()
 
 	// Register routes
-	//mux.HandleFunc("/", s.HelloWorldHandler)
 	mux.HandleFunc("/health", s.healthHandler)
 
 	api := http.NewServeMux()
 	api.HandleFunc("GET /fetch", s.FetchAndStorePlaylistItems)
 	api.HandleFunc("GET /videos", s.getAllVideosHandler)
 	api.HandleFunc("GET /video", s.getDailyVideoHandler)
+	api.HandleFunc("GET /analytics", s.analyticsHandler)
 
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", api))
 
@@ -30,7 +30,56 @@ func (s *Server) RegisterRoutes() http.Handler {
 	}
 
 	// Wrap the mux with CORS middleware
-	return s.corsMiddleware(mux)
+	// Wrap the mux with visitor analytics and CORS middleware
+	return s.corsMiddleware(s.visitorAnalyticsMiddleware(mux))
+}
+
+// visitorAnalyticsMiddleware sets/checks a unique visitor cookie and logs new visits
+func (s *Server) visitorAnalyticsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only track visits to the root path
+		if r.URL.Path != "/" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		cookieName := "visitor"
+		visitorID := ""
+		cookie, err := r.Cookie(cookieName)
+		if err != nil || cookie.Value == "" {
+			// Generate a new visitor ID
+			visitorID = generateVisitorID()
+			// Set cookie (1 year expiry)
+			http.SetCookie(w, &http.Cookie{
+				Name:     cookieName,
+				Value:    visitorID,
+				Path:     "/",
+				Expires:  time.Now().AddDate(1, 0, 0),
+				HttpOnly: true,
+			})
+		} else {
+			visitorID = cookie.Value
+		}
+		// Always log the visit (LogVisitor will only store if >30min since last)
+		s.db.LogVisitor(visitorID, time.Now().UTC())
+		// Continue to next handler
+		next.ServeHTTP(w, r)
+	})
+}
+
+// generateVisitorID creates a random string for visitor identification
+func generateVisitorID() string {
+	return strconv.FormatInt(time.Now().UnixNano(), 36) + RandString(8)
+}
+
+// RandString returns a random string of n length
+func RandString(n int) string {
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[int(time.Now().UnixNano())%len(letters)]
+	}
+	return string(b)
 }
 
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
@@ -126,9 +175,15 @@ func (s *Server) getDailyVideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]string{"message": "Hello World"}
-	jsonResp, err := json.Marshal(resp)
+func (s *Server) analyticsHandler(w http.ResponseWriter, r *http.Request) {
+	// retrieve analytics data from the database
+	analytics, err := s.db.GetAnalytics()
+	if err != nil {
+		http.Error(w, "Failed to retrieve analytics", http.StatusInternalServerError)
+		return
+	}
+
+	jsonResp, err := json.Marshal(analytics)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
