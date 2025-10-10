@@ -38,7 +38,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 func (s *Server) visitorAnalyticsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only track visits to the root path
-		if r.URL.Path != "/" {
+		if r.URL.Path != "/" || s.db == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -60,7 +60,7 @@ func (s *Server) visitorAnalyticsMiddleware(next http.Handler) http.Handler {
 		} else {
 			visitorID = cookie.Value
 		}
-		// Always log the visit (LogVisitor will only store if >30min since last)
+
 		s.db.LogVisitor(visitorID, time.Now().UTC())
 		// Continue to next handler
 		next.ServeHTTP(w, r)
