@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -43,6 +44,12 @@ func (s *Server) visitorAnalyticsMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Skip bot and health check traffic
+		if isBot(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		cookieName := "visitor"
 		visitorID := ""
 		cookie, err := r.Cookie(cookieName)
@@ -65,6 +72,33 @@ func (s *Server) visitorAnalyticsMiddleware(next http.Handler) http.Handler {
 		// Continue to next handler
 		next.ServeHTTP(w, r)
 	})
+}
+
+// isBot checks if the request is from a bot or automated tool
+func isBot(r *http.Request) bool {
+	userAgent := strings.ToLower(r.Header.Get("User-Agent"))
+
+	// Empty user agent is likely a bot
+	if userAgent == "" {
+		return true
+	}
+
+	// Common bot patterns
+	botPatterns := []string{
+		"bot", "crawler", "spider", "scraper",
+		"curl", "wget", "python", "axios", "node-fetch",
+		"health", "monitor", "uptime", "pingdom",
+		"googlebot", "bingbot", "slurp", "duckduckbot",
+		"baiduspider", "yandexbot", "facebookexternalhit",
+	}
+
+	for _, pattern := range botPatterns {
+		if strings.Contains(userAgent, pattern) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // generateVisitorID creates a random string for visitor identification
@@ -113,7 +147,7 @@ func (s *Server) getAllVideosHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var dailyVideoIndex = 2
+var dailyVideoIndex = 13
 var lastUpdatedDate = ""
 
 // Get the daily video from the database. Beginning with the first video and then every 24 hours.

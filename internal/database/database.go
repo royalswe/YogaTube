@@ -178,6 +178,7 @@ func (s *service) GetAnalytics() (any, error) {
 	// Get total visitors per 30 minutes
 	halfHourQuery := `
 		SELECT 
+			visitor_id,
 			STRFTIME('%Y-%m-%d %H:', visited_at) || 
 			CASE WHEN CAST(STRFTIME('%M', visited_at) AS INTEGER) < 30 THEN '00' ELSE '30' END as half_hour,
 			COUNT(*) as total
@@ -193,14 +194,16 @@ func (s *service) GetAnalytics() (any, error) {
 
 	halfHourStats := make([]map[string]any, 0)
 	for halfHourRows.Next() {
+		var visitorID string
 		var halfHour string
 		var total int
-		if err := halfHourRows.Scan(&halfHour, &total); err != nil {
+		if err := halfHourRows.Scan(&visitorID, &halfHour, &total); err != nil {
 			return nil, fmt.Errorf("failed to scan 30-min analytics: %w", err)
 		}
 		halfHourStats = append(halfHourStats, map[string]any{
-			"half_hour": halfHour,
-			"total":     total,
+			"visitor_id": visitorID,
+			"half_hour":  halfHour,
+			"total":      total,
 		})
 	}
 	if err := halfHourRows.Err(); err != nil {
