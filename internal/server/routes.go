@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -20,7 +19,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	api.HandleFunc("GET /fetch", s.FetchAndStorePlaylistItems)
 	api.HandleFunc("GET /videos", s.getAllVideosHandler)
 	api.HandleFunc("GET /video", s.getDailyVideoHandler)
-	api.HandleFunc("GET /analytics", s.analyticsHandler)
 
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", api))
 
@@ -31,89 +29,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	}
 
 	// Wrap the mux with CORS middleware
-	// Wrap the mux with visitor analytics and CORS middleware
-	return s.corsMiddleware(s.visitorAnalyticsMiddleware(mux))
-}
-
-// visitorAnalyticsMiddleware sets/checks a unique visitor cookie and logs new visits
-func (s *Server) visitorAnalyticsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Only track visits to the root path
-		if r.URL.Path != "/" || s.db == nil {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// Skip bot and health check traffic
-		if isBot(r) {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		cookieName := "visitor"
-		visitorID := ""
-		cookie, err := r.Cookie(cookieName)
-		if err != nil || cookie.Value == "" {
-			// Generate a new visitor ID
-			visitorID = generateVisitorID()
-			// Set cookie (1 year expiry)
-			http.SetCookie(w, &http.Cookie{
-				Name:     cookieName,
-				Value:    visitorID,
-				Path:     "/",
-				Expires:  time.Now().AddDate(1, 0, 0),
-				HttpOnly: true,
-			})
-		} else {
-			visitorID = cookie.Value
-		}
-
-		s.db.LogVisitor(visitorID, time.Now().UTC())
-		// Continue to next handler
-		next.ServeHTTP(w, r)
-	})
-}
-
-// isBot checks if the request is from a bot or automated tool
-func isBot(r *http.Request) bool {
-	userAgent := strings.ToLower(r.Header.Get("User-Agent"))
-
-	// Empty user agent is likely a bot
-	if userAgent == "" {
-		return true
-	}
-
-	// Common bot patterns
-	botPatterns := []string{
-		"bot", "crawler", "spider", "scraper",
-		"curl", "wget", "python", "axios", "node-fetch",
-		"health", "monitor", "uptime", "pingdom",
-		"googlebot", "bingbot", "slurp", "duckduckbot",
-		"baiduspider", "yandexbot", "facebookexternalhit",
-	}
-
-	for _, pattern := range botPatterns {
-		if strings.Contains(userAgent, pattern) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// generateVisitorID creates a random string for visitor identification
-func generateVisitorID() string {
-	return strconv.FormatInt(time.Now().UnixNano(), 36) + RandString(8)
-}
-
-// RandString returns a random string of n length
-func RandString(n int) string {
-	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[int(time.Now().UnixNano())%len(letters)]
-	}
-	return string(b)
+	return s.corsMiddleware(mux)
 }
 
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
@@ -205,25 +121,6 @@ func (s *Server) getDailyVideoHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(video); err != nil {
-		log.Printf("Failed to write response: %v", err)
-	}
-}
-
-func (s *Server) analyticsHandler(w http.ResponseWriter, r *http.Request) {
-	// retrieve analytics data from the database
-	analytics, err := s.db.GetAnalytics()
-	if err != nil {
-		http.Error(w, "Failed to retrieve analytics", http.StatusInternalServerError)
-		return
-	}
-
-	jsonResp, err := json.Marshal(analytics)
-	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if _, err := w.Write(jsonResp); err != nil {
 		log.Printf("Failed to write response: %v", err)
 	}
 }
