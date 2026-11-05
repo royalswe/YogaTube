@@ -6,9 +6,9 @@ services:
       target: prod
     restart: unless-stopped
     ports:
-      - 8080:8080
+      - 8085:8085
     environment:
-      PORT: 8080
+      PORT: 8085
       BLUEPRINT_DB_URL: ./db/test.db
     volumes:
       - sqlite_bp:/app/db
@@ -19,7 +19,7 @@ services:
       - traefik.http.routers.yoga.rule=Host(`yoga.funlig.com`)
       - traefik.http.routers.yoga.entrypoints=websecure
       - traefik.http.routers.yoga.tls.certResolver=letsencrypt
-      - traefik.http.services.yoga.loadbalancer.server.port=8080
+      - traefik.http.services.yoga.loadbalancer.server.port=8085
     
 volumes:
   sqlite_bp:

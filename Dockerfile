@@ -25,5 +25,5 @@ RUN apk add --no-cache libstdc++
 WORKDIR /app
 COPY --from=build /app/main /app/main
 COPY --from=build /app/frontend/dist /app/frontend/dist
-EXPOSE 8080
+EXPOSE 8085
 CMD ["./main"]
