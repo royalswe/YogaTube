@@ -45,9 +45,13 @@ func TestDailyVideoEmptyDatabase(t *testing.T) {
 }
 
 func TestFetchRejectsYouTubeError(t *testing.T) {
+	t.Setenv("YOUTUBE_API_KEY", "test-youtube-api-key")
 	originalClient := http.DefaultClient
 	t.Cleanup(func() { http.DefaultClient = originalClient })
 	http.DefaultClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		if request.URL.Query().Get("key") != "test-youtube-api-key" {
+			t.Error("YouTube request did not use YOUTUBE_API_KEY")
+		}
 		return &http.Response{
 			StatusCode: http.StatusForbidden,
 			Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"Request rejected","errors":[{"reason":"quotaExceeded"}]}}`)),
@@ -63,6 +67,30 @@ func TestFetchRejectsYouTubeError(t *testing.T) {
 	}
 	if !strings.Contains(recorder.Body.String(), "quotaExceeded") {
 		t.Errorf("response should explain the YouTube failure: %q", recorder.Body.String())
+	}
+}
+
+func TestFetchRequiresYouTubeAPIKey(t *testing.T) {
+	t.Setenv("YOUTUBE_API_KEY", "")
+	originalClient := http.DefaultClient
+	t.Cleanup(func() { http.DefaultClient = originalClient })
+	http.DefaultClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		t.Error("YouTube must not be called without an API key")
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(`{"items":[]}`)),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	recorder := httptest.NewRecorder()
+	server := &Server{}
+	server.FetchAndStorePlaylistItems(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/fetch", nil))
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("status: got %d, want %d", recorder.Code, http.StatusInternalServerError)
+	}
+	if !strings.Contains(recorder.Body.String(), "YOUTUBE_API_KEY is not configured") {
+		t.Errorf("response should explain the missing configuration: %q", recorder.Body.String())
 	}
 }
 

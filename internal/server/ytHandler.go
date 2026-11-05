@@ -7,16 +7,23 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 // Fetch data from YouTube API and store in database
 func (s *Server) FetchAndStorePlaylistItems(w http.ResponseWriter, r *http.Request) {
+	apiKey := os.Getenv("YOUTUBE_API_KEY")
+	if apiKey == "" {
+		http.Error(w, "YOUTUBE_API_KEY is not configured", http.StatusInternalServerError)
+		return
+	}
+
 	apiURL := "https://www.googleapis.com/youtube/v3/playlistItems"
 	params := map[string]string{
 		"part":       "snippet",
 		"maxResults": "50",
 		"playlistId": "PLxVWCXBCnDMNRTtdO1E-4VGTz1LEnJoWs",
-		"key":        "AIzaSyAUoxeshPlUOMEUJReQoadd42FO_QqUar8",
+		"key":        apiKey,
 	}
 
 	// Build query string
