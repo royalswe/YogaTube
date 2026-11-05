@@ -95,6 +95,10 @@ func (s *Server) getDailyVideoHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to fetch video count", http.StatusInternalServerError)
 			return
 		}
+		if totalVideos == 0 {
+			http.Error(w, "No videos available. Import a playlist first.", http.StatusNotFound)
+			return
+		}
 		// If dailyVideoIndex exceeds totalVideos, reset to the first video
 		if dailyVideoIndex > totalVideos {
 			dailyVideoIndex = 1

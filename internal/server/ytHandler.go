@@ -3,6 +3,7 @@ package server
 import (
 	"YogaTube/internal/models"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -46,11 +47,32 @@ func (s *Server) FetchAndStorePlaylistItems(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		var apiError struct {
+			Error struct {
+				Errors []struct {
+					Reason string `json:"reason"`
+				} `json:"errors"`
+			} `json:"error"`
+		}
+		reason := "upstream request rejected"
+		if json.Unmarshal(body, &apiError) == nil && len(apiError.Error.Errors) > 0 {
+			reason = apiError.Error.Errors[0].Reason
+		}
+		message := fmt.Sprintf("YouTube API request failed (HTTP %d): %s", resp.StatusCode, reason)
+		log.Print(message)
+		http.Error(w, message, http.StatusBadGateway)
+		return
+	}
+
 	var playlist models.PlaylistResponse
 	if err := json.Unmarshal(body, &playlist); err != nil {
 		log.Printf("Failed to write response: %v", err)
-		http.Error(w, "Failed to create request", http.StatusInternalServerError)
+		http.Error(w, "Invalid response from YouTube API", http.StatusBadGateway)
 		return
+	}
+	if playlist.Items == nil {
+		playlist.Items = []models.Item{}
 	}
 
 	// Store each item in the database (implement your own logic)
@@ -68,12 +90,15 @@ func (s *Server) FetchAndStorePlaylistItems(w http.ResponseWriter, r *http.Reque
 		}
 		if err := s.db.SaveVideo(dbSnippet); err != nil {
 			log.Printf("Failed saving video: %v", err)
+			http.Error(w, "Failed to save playlist video", http.StatusInternalServerError)
+			return
 		}
 	}
 
 	jsonResp, err := json.Marshal(playlist.Items)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(jsonResp); err != nil {

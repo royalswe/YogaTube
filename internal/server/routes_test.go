@@ -1,10 +1,70 @@
 package server
 
 import (
+	"YogaTube/internal/database"
+	"database/sql"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (transport roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return transport(request)
+}
+
+type emptyVideoDatabase struct {
+	database.Service
+}
+
+func (emptyVideoDatabase) GetVideoById(id int) ([]byte, error) {
+	return nil, sql.ErrNoRows
+}
+
+func (emptyVideoDatabase) GetTotalVideos() (int, error) {
+	return 0, nil
+}
+
+func TestDailyVideoEmptyDatabase(t *testing.T) {
+	originalIndex, originalDate := dailyVideoIndex, lastUpdatedDate
+	t.Cleanup(func() {
+		dailyVideoIndex, lastUpdatedDate = originalIndex, originalDate
+	})
+	server := &Server{db: emptyVideoDatabase{}}
+	recorder := httptest.NewRecorder()
+	server.getDailyVideoHandler(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/video", nil))
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status: got %d with body %q, want %d", recorder.Code, recorder.Body.String(), http.StatusNotFound)
+	}
+	if !strings.Contains(recorder.Body.String(), "No videos available") {
+		t.Errorf("response should explain that the database is empty: %q", recorder.Body.String())
+	}
+}
+
+func TestFetchRejectsYouTubeError(t *testing.T) {
+	originalClient := http.DefaultClient
+	t.Cleanup(func() { http.DefaultClient = originalClient })
+	http.DefaultClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusForbidden,
+			Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"Request rejected","errors":[{"reason":"quotaExceeded"}]}}`)),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	recorder := httptest.NewRecorder()
+	server := &Server{}
+	server.FetchAndStorePlaylistItems(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/fetch", nil))
+	if recorder.Code != http.StatusBadGateway {
+		t.Fatalf("status: got %d with body %q, want %d", recorder.Code, recorder.Body.String(), http.StatusBadGateway)
+	}
+	if !strings.Contains(recorder.Body.String(), "quotaExceeded") {
+		t.Errorf("response should explain the YouTube failure: %q", recorder.Body.String())
+	}
+}
 
 func TestHandler(t *testing.T) {
 	s := &Server{}
