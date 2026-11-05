@@ -178,7 +178,7 @@ func (s *service) Close() error {
 // SaveVideo saves the video data to the database.
 // It returns an error if the video data cannot be saved.
 func (s *service) SaveVideo(snippet models.Snippet) error {
-	query := `INSERT INTO videos (published_at, title, description, thumbnail_url, video_id, owner_channel_title) VALUES (?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO videos (published_at, title, description, thumbnail_url, video_id, owner_channel_title) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(video_id) DO NOTHING`
 	_, err := s.db.Exec(query, snippet.PublishedAt, snippet.Title, snippet.Description, snippet.Thumbnails.Default.URL, snippet.ResourceID.VideoID, snippet.VideoOwnerChannelTitle)
 	if err != nil {
 		return fmt.Errorf("failed to save video: %w", err)
